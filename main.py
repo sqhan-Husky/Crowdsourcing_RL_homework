@@ -14,8 +14,10 @@ if __name__ == "__main__":
     GAMMA = 0.9
     TARGET_REPLACE_ITER = 100
     MEMORY_CAPACITY = 2000
-    N_ACTIONS =
-    SEQ_LEN =
+    N_ACTIONS = 3000
+    SEQ_LEN = 20
+
+    # TODO: CUDA
 
     data = pd.read_csv('')
     category = data['category'].values.tolist()
@@ -31,9 +33,9 @@ if __name__ == "__main__":
         reward_sum = 0
 
         for index, row in train.iterrows():
-            state = row['state']
-            action = dqn.choose_action(state)
-            state_next = state.append(action)
+            state = row['sequence']
+            env.update(row['exist_pjs'])
+            action, state_next = dqn.choose_action(state, row['exist_pjs'])
             reward = env.step(action, row['true_action'])
 
             dqn.store_transition(state, action, reward, state_next)
@@ -41,3 +43,7 @@ if __name__ == "__main__":
 
             if dqn.memory_counter > MEMORY_CAPACITY:
                 dqn.learn()
+
+            # TODO: print reward
+
+    # TODO: Test - metric

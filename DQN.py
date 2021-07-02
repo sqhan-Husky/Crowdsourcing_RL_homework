@@ -24,21 +24,39 @@ class DQN():
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=lr)
         self.loss_function = nn.MSELoss()
 
-    def choose_action(self, state):
+    def choose_action(self, state, exist_pjs):
         # for one timestep per user
-        # state here is a sequence of project-id
         state = torch.unsqueeze(torch.LongTensor(state), 0)    # [len(actions)] -> [1, len(actions)]
-
-        # question: should we exclude unreal action when choose action?
-        #           or make the judgement in environment?
-
+        # exist_pjs needs binary list
         if np.random.uniform() < self.epsilon:
-            actions_value = self.eval_net.forward(state)  # batchsize = 1 ?  actions_values: [1, len(actions)]
+            actions_value = self.eval_net.forward(state)
+            actions_value = actions_value.mul(torch.LongTensor(exist_pjs))
             action = torch.max(actions_value, 1)[1].data.numpy()
             action = action[0]
         else:
             action = np.random.ranint(0, self.n_actions)
-        return action
+            while exist_pjs[action] == 0:
+                action = np.random.ranint(0, self.n_actions)
+
+        state_next = self.update_state(state, action)
+        return action, state_next
+
+    def update_state(self, state, action):
+        # seq_update
+        current_seq = state[0:self.seq_len]
+        if current_seq[self.seq_len-1] != 0:
+            seq_next = np.append(state, action)[1:]
+        else:
+            timestep = np.argwhere(current_seq == 0)[0][0]   # find first non-zero step
+            current_seq[timestep] = action
+            seq_next = current_seq
+
+        # todo: histo_update
+        current_histo = state[self.seq_len:]
+        histo_next = current_histo
+
+        state_next = np.hstack(seq_next, histo_next)
+        return state_next
 
     def store_transition(self, state, action, reward, s_next):
         transition = np.hstack((state, [action, reward], s_next))
@@ -55,7 +73,7 @@ class DQN():
         b_memory = self.memory[sample_index]
         b_state = torch.LongTensor(b_memory[:, : self.seq_len])
         b_action = torch.LongTensor(b_memory[:, self.seq_len: self.seq_len + 1])
-        b_reward = torch.FloatTensor(b_memory[:, self.seq_len + 1 : self.seq_len + 2])
+        b_reward = torch.FloatTensor(b_memory[:, self.seq_len + 1: self.seq_len + 2])
         b_state_next = torch.LongTensor(b_memory[:, -self.seq_len:])
 
         q_eval = self.eval_net(b_state).gather(dim=1, index=b_action)  # gather ?
@@ -67,6 +85,8 @@ class DQN():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+        # TODO: tensorboard - loss
 
 
 
