@@ -22,12 +22,12 @@ class Environment():
         self.current_pj_entry[true_actions] += 1
         current_reward = 0
         #project下标从1开始
-        actions = actions+1
-        if actions == true_actions:
+        # actions = actions+1
+        if actions+1 == true_actions:
             current_reward += 1
             state_next = self.update_state(state, actions)
 
-        elif self.category[actions] == self.category[true_actions]:
+        elif self.category[actions] == self.category[true_actions-1]:
             current_reward += 0.5
             state_next = state
 
