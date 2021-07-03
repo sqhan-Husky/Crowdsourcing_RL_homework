@@ -64,11 +64,13 @@ if __name__ == "__main__":
     count = 0
     for index, row in test.iterrows():
         state = row['sequence']
-        env.update(row['exist_pjs_b'])
-        state, action = dqn.choose_action(state, row['exist_pjs_b'], row['exist_pjs_list'])
+        env.update(row['exist_pjs_list'])  # exist_pjs_list列表的形式
+        state, action = dqn.choose_action(state, row['exist_pjs_list'])
         reward, state_next = env.step(state, action, row['true_action'])
 
-        if action+1 == row['true_action']:
-            count +=1
-        test_reward  += reward
-    print('Test reward: %d   CR: %f '% (test_reward, count/len(test)))
+        if action + 1 == row['true_action']:
+            count += 1
+        test_reward += reward
+
+        if index % 1000 == 0:
+            print('Test reward: %d   CR: %f ' % (test_reward, count / len(test)))
