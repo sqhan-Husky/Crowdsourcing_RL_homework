@@ -53,10 +53,13 @@ class DQN():
         return state,action
 
     def store_transition(self, state, action, reward, s_next):
+
         transition = np.hstack((state[0], [action, reward], s_next[0]))
-        index = self.memory_counter % self.memory_capacity
         self.memory.append(transition)
         self.memory_counter += 1
+        if self.memory_counter > self.memory_capacity:
+            self.memory.pop(0)
+            self.memory_counter -= 1
 
     def learn(self):
         # slen = state.shape[1] - self.histo_len
