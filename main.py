@@ -1,6 +1,7 @@
 from DQN import DQN
 from Embedding import Net
 from Environment import Environment
+
 import numpy as np
 import collections
 import pandas as pd

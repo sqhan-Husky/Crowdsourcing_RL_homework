@@ -15,13 +15,15 @@ class Net(nn.Module):
 
         self.rnn = nn.LSTM(input_size=embedding_dim, hidden_size=rnn_hidden_dim,
                            num_layers=n_layers, batch_first=True, dropout=rnn_dropout)
+
         self.h0 = torch.randn(n_layers, rnn_hidden_dim)
         self.c0 = torch.randn(n_layers, rnn_hidden_dim)
+        self.layer1 = nn.Linear(rnn_hidden_dim, n_actions, bias=True)
 
-        self.pred_layer = nn.Linear(rnn_hidden_dim, n_actions, bias=True)
+        self.pred_layer = nn.Linear(rnn_hidden_dim+self.histo_len, n_actions, bias=True)
 
     def forward(self, state):
-        seq = self.seq_embed(state[0: self.seq_len])
+        seq = self.seq_embed(state[:,0: self.seq_len])
         batchsize = state.size()[0]
         h0 = torch.unsqueeze(self.h0, 1).repeat(1, batchsize, 1)
         c0 = torch.unsqueeze(self.c0, 1).repeat(1, batchsize, 1)
@@ -30,6 +32,12 @@ class Net(nn.Module):
         res, hn = self.rnn(seq, (h0, c0))   # res [bs, seq_len, hidden_dim]
 
         # TODO: histo normalization + concat ?
+        histo = state[:, self.seq_len:].float()
+        histo = torch.nn.functional.normalize(histo, dim=1)
 
+        # todo: rnn 的res mean或者最后一个？ 目前取的是mean
+        res = torch.mean(res, dim=1)
+        res = torch.cat((res, histo), 1)
         actions_value = self.pred_layer(res)
+
         return actions_value
