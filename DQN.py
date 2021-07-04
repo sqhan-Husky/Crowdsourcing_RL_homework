@@ -6,7 +6,7 @@ from Embedding import Net
 
 
 class DQN():
-    def __init__(self, seq_len, histo_len,category, n_actions, batch_size, lr, epsilon, gamma, target_replace_iter, memory_capacity):
+    def __init__(self, seq_len, histo_len, n_actions, batch_size, lr, epsilon, gamma, target_replace_iter, memory_capacity):
         self.seq_len = seq_len    # max_padding_len before input
         self.n_actions = n_actions
         self.batch_size = batch_size
@@ -23,7 +23,7 @@ class DQN():
         self.embedding_dim = 30
         self.rnn_hidden_dim = 100
         self.n_layers = 5
-        self.histo_len = 7
+        self.histo_len = 36
         self.eval_net = Net(self.max_pj, self.embedding_dim, self.seq_len, self.n_actions,
                             self.histo_len,self.rnn_hidden_dim,self.n_layers).cuda()
         self.target_net = Net(self.max_pj, self.embedding_dim, self.seq_len, self.n_actions,

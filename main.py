@@ -26,19 +26,19 @@ if __name__ == "__main__":
     MEMORY_CAPACITY = 100
     N_ACTIONS = 2600
     SEQ_LEN = 20
-    HISTO_LEN = 7
+    HISTO_LEN = 36
 
     data = pd.read_pickle('data/data.pkl')
     category = data['category'].values.tolist()
     pj_entry = data['entry_num'].values.tolist()
-
+    sub_category = data['sub_category'].values.tolist()
 
     all_data = pd.read_pickle('data/alldata.pkl')
     train,test = split_data(all_data, 0.8)
 
-    env = Environment(category, pj_entry)
-    dqn = DQN(SEQ_LEN,HISTO_LEN,category, N_ACTIONS, BATCH_SIZE, LR, EPSILON, GAMMA, TARGET_REPLACE_ITER, MEMORY_CAPACITY)
-    #dqn.cuda()
+    env = Environment(category, pj_entry,sub_category)
+    dqn = DQN(SEQ_LEN,HISTO_LEN, N_ACTIONS, BATCH_SIZE, LR, EPSILON, GAMMA, TARGET_REPLACE_ITER, MEMORY_CAPACITY)
+    # dqn.cuda()
 
     for i in range(0, EPOCH):
         env.reset()
@@ -67,8 +67,8 @@ if __name__ == "__main__":
                 cnt_learn += 1
 
             # TODO: print reward
-            #if j % 1000 == 0:
-            #    print('EPOCH: %d   timetamps: %d  reward:%f,' % (i, j,  reward_sum/cnt))
+            if j % 1000 == 0:
+               print('EPOCH: %d   timetamps: %d  reward:%f,' % (i, j,  reward_sum/cnt))
         print('EPOCH: %d   timetamps: %d  reward:%f,' % (i, j, reward_sum / cnt))
 
 
@@ -77,8 +77,8 @@ if __name__ == "__main__":
     count = 0
     for index, row in test.iterrows():
         state = row['sequence']
-        env.update(row['exist_pjs_b'])
-        state, action = dqn.choose_action(state, row['exist_pjs_b'], row['exist_pjs_list'])
+        env.update(row['exist_pjs_list'])
+        state, action = dqn.choose_action(state, row['exist_pjs_list'])
         reward, state_next = env.step(state, action, row['true_action'])
 
         if action+1 == row['true_action']:
