@@ -19,7 +19,7 @@ class Environment():
 
     def step(self, state, actions, true_actions):
         cumulated_reward = self.cumulated_reward
-        self.current_pj_entry[true_actions] += 1
+        self.current_pj_entry[true_actions-1] += 1
         current_reward = 0
         #project下标从1开始
         # actions = actions+1
