@@ -53,8 +53,10 @@ class DQN():
         return state,action
 
     def store_transition(self, state, action, reward, s_next):
-
-        transition = np.hstack((state[0], [action, reward], s_next[0]))
+        if s_next.shape[0] == 1:
+            transition = np.hstack((state[0], [action, reward], s_next[0]))
+        else:
+            transition = np.hstack((state[0], [action, reward], s_next))
         self.memory.append(transition)
         self.memory_counter += 1
         if self.memory_counter > self.memory_capacity:
