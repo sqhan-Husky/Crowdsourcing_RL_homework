@@ -16,8 +16,8 @@ class Net(nn.Module):
         self.rnn = nn.LSTM(input_size=embedding_dim, hidden_size=rnn_hidden_dim,
                            num_layers=n_layers, batch_first=True, dropout=rnn_dropout)
 
-        self.h0 = torch.randn(n_layers, rnn_hidden_dim)
-        self.c0 = torch.randn(n_layers, rnn_hidden_dim)
+        self.h0 = torch.randn(n_layers, rnn_hidden_dim).cuda()
+        self.c0 = torch.randn(n_layers, rnn_hidden_dim).cuda()
         self.layer1 = nn.Linear(rnn_hidden_dim, n_actions, bias=True)
 
         self.pred_layer = nn.Linear(rnn_hidden_dim+self.histo_len, n_actions, bias=True)
@@ -29,15 +29,16 @@ class Net(nn.Module):
         c0 = torch.unsqueeze(self.c0, 1).repeat(1, batchsize, 1)
 
         # TODO: sort & pack & pad
-        res, hn = self.rnn(seq, (h0, c0))   # res [bs, seq_len, hidden_dim]
+        res, (hn, cn) = self.rnn(seq, (h0, c0))   # res [bs, seq_len, hidden_dim]
 
         # TODO: histo normalization + concat ?
         histo = state[:, self.seq_len:].float()
         histo = torch.nn.functional.normalize(histo, dim=1)
 
         # todo: rnn 的res mean或者最后一个？ 目前取的是mean
-        res = torch.mean(res, dim=1)
+        #res = torch.mean(res, dim=1)
+        res = hn[-1, :, :]
         res = torch.cat((res, histo), 1)
         actions_value = self.pred_layer(res)
-
+        #actions_value = torch.nn.functional.softmax(actions_value)
         return actions_value
