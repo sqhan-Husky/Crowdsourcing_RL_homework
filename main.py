@@ -6,6 +6,8 @@ import numpy as np
 import collections
 import pandas as pd
 from tqdm import tqdm
+from tensorboardX import SummaryWriter
+writer = SummaryWriter('logs/0704_1')
 
 def split_data(data,per):
 
@@ -21,11 +23,10 @@ if __name__ == "__main__":
     EPSILON = 0.9
     GAMMA = 0.9
     TARGET_REPLACE_ITER = 100
-    MEMORY_CAPACITY = 2000
+    MEMORY_CAPACITY = 100
     N_ACTIONS = 2600
     SEQ_LEN = 20
     HISTO_LEN = 7
-    # TODO: CUDA
 
     data = pd.read_pickle('data/data.pkl')
     category = data['category'].values.tolist()
@@ -42,24 +43,34 @@ if __name__ == "__main__":
     for i in range(0, EPOCH):
         env.reset()
         reward_sum = 0
+        cnt = 0
+        cnt_learn = 0
 
         for j in tqdm(range(0, len(train))):
         # for index, row in tqdm(train.iterrows()):
             record = train[j:j+1]
             state = record['sequence'].values[0]
+            if np.sum(np.array(state[0:SEQ_LEN]) > 0) <= 5:
+                continue
+
             env.update(record['exist_pjs_list'].values[0]) #exist_pjs_list列表的形式
             state, action = dqn.choose_action(state, record['exist_pjs_list'].values[0])
             reward, state_next = env.step(state, action, record['true_action'].values[0])
 
             dqn.store_transition(state, action, reward, state_next)
             reward_sum += reward
+            cnt += 1
 
             if dqn.memory_counter > MEMORY_CAPACITY:
-                dqn.learn()
+                loss = dqn.learn()
+                writer.add_scalar('Train/Loss', loss, cnt_learn)
+                cnt_learn += 1
 
             # TODO: print reward
-            if j % 1000 == 0:
-                print('EPOCH: %d   timetamps: %d   reward:%f,'%(i, j, reward_sum/(j+1)))
+            #if j % 1000 == 0:
+            #    print('EPOCH: %d   timetamps: %d  reward:%f,' % (i, j,  reward_sum/cnt))
+        print('EPOCH: %d   timetamps: %d  reward:%f,' % (i, j, reward_sum / cnt))
+
 
     # TODO: Test - metric
     test_reward = 0

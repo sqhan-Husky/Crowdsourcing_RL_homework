@@ -4,6 +4,7 @@ import numpy as np
 import collections
 from Embedding import Net
 
+
 class DQN():
     def __init__(self, seq_len, histo_len,category, n_actions, batch_size, lr, epsilon, gamma, target_replace_iter, memory_capacity):
         self.seq_len = seq_len    # max_padding_len before input
@@ -30,7 +31,8 @@ class DQN():
 
         self.learn_step_counter = 0    # for target updating
         self.memory_counter = 0        # for counting records
-        self.memory = []   # store records
+        #self.memory = []   # store records
+        self.memory = np.zeros((memory_capacity, (seq_len+histo_len) * 2 + 2))
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=lr)
         self.loss_function = nn.MSELoss()
 
@@ -60,11 +62,13 @@ class DQN():
         else:
             transition = np.hstack((state[0], [action, reward], s_next))
         #transition = np.hstack((state[0], [action, reward], s_next[0]))
-        self.memory.append(transition)
+        # self.memory.append(transition)
+        index = self.memory_counter % self.memory_capacity
+        self.memory[index, :] = transition
         self.memory_counter += 1
-        if self.memory_counter > self.memory_capacity:
-            self.memory.pop(0)
-            self.memory_counter -= 1
+        # if self.memory_counter > self.memory_capacity:
+        #     self.memory.pop(0)
+        #     self.memory_counter -= 1
 
     def learn(self):
         # slen = state.shape[1] - self.histo_len
@@ -74,6 +78,7 @@ class DQN():
 
         sample_index = np.random.choice(self.memory_capacity, self.batch_size)  # capacity >= bs
         b_memory = np.array(self.memory)[sample_index]
+        #b_memory = self.memory
         b_state = torch.LongTensor([b[: self.seq_len+self.histo_len] for b in b_memory]).cuda()
         b_action = torch.LongTensor([b[self.seq_len+self.histo_len: self.seq_len+self.histo_len + 1] for b in b_memory]).cuda()
         b_reward = torch.FloatTensor([b[self.seq_len+self.histo_len+1: self.seq_len+self.histo_len + 2] for b in b_memory]).cuda()
@@ -88,6 +93,8 @@ class DQN():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+        return loss.item()
 
         # TODO: tensorboard - loss
 
