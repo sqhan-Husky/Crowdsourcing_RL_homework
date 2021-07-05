@@ -59,9 +59,9 @@ class Environment():
         current_seq_pro = state[0][1:self.seq_len+1]
         seq_pro_next = np.append(current_seq_pro, action)[1:]
         current_seq_cat = state[0][self.seq_len + 1:self.seq_len*2 + 1]
-        seq_cat_next = np.append(current_seq_cat, self.category[action-1] + 1)[1:]
+        seq_cat_next = np.append(current_seq_cat, self.category_index.index(self.category[action-1]) + 1)[1:]
         current_seq_sub = state[0][self.seq_len*2 + 1:self.seq_len * 3 + 1]
-        seq_sub_next = np.append(current_seq_sub, self.sub_category[action-1] + 1)[1:]
+        seq_sub_next = np.append(current_seq_sub, self.subcategory_index.index(self.sub_category[action-1]) + 1)[1:]
 
         if entry_num == self.pj_entry[action-1]:
             t_l = []

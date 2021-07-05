@@ -17,7 +17,7 @@ def split_data(data,per):
     return train_data,test_data
 
 if __name__ == "__main__":
-    EPOCH = 2
+    EPOCH = 1
     BATCH_SIZE = 32
     LR = 0.01
     EPSILON = 0.9
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     pj_entry = data['entry_num'].values.tolist()
     sub_category = data['sub_category'].values.tolist()
 
-    all_data = pd.read_pickle('data/alldata_task.pkl')
+    all_data = pd.read_pickle('data/alldata_10000task.pkl')
     train,test = split_data(all_data, 0.8)
 
     env = Environment(category, pj_entry,sub_category)
@@ -45,11 +45,12 @@ if __name__ == "__main__":
         env.reset()
         reward_sum = 0
 
-
+        cnt_e = 0
         for j in tqdm(range(0, len(train))):
         # for index, row in tqdm(train.iterrows()):
             record = train[j:j+1]
             state = record['sequence'].values[0]
+
             if np.sum(np.array(state[0:SEQ_LEN]) > 0) <= 5:
                 continue
             env.update(record['exist_pjs_list'].values[0]) #exist_pjs_list列表的形式
@@ -59,7 +60,8 @@ if __name__ == "__main__":
             dqn.store_transition(state, action, reward, state_next)
             reward_sum += reward
             cnt += 1
-            writer.add_scalar('Train/Loss', reward_sum/cnt, cnt)
+            cnt_e += 1
+            writer.add_scalar('Train/Reward', reward_sum/cnt_e, cnt)
             if dqn.memory_counter > MEMORY_CAPACITY:
                 loss = dqn.learn()
                 writer.add_scalar('Train/Loss', loss, cnt_learn)
@@ -80,8 +82,10 @@ if __name__ == "__main__":
         state = record['sequence'].values[0]
         env.update(record['exist_pjs_list'].values[0])  # exist_pjs_list列表的形式
         state, action = dqn.choose_action(state, record['exist_pjs_list'].values[0])
+        reward, state_next = env.step(state, action, record['true_action'].values[0],
+                                      record['exist_pjs_list'].values[0], record['entry_num'].values[0])
 
         if record['exist_pjs_list'].values[0][action] == record['true_action'].values[0]:
             count +=1
-            test_reward += reward
-    print('Test reward: %d   CR: %f '% (test_reward/len(test), count/len(test)))
+        test_reward += reward
+    print('Test reward: %f   CR: %f '% (test_reward/len(test), count/len(test)))
